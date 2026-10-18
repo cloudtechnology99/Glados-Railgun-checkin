@@ -1,0 +1,37 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    # 每周日 00:00 UTC 执行（对应北京时间每周日 08:00）
+    - cron: '0 0 * * 0'
+  workflow_dispatch:   # 支持手动触发，方便需要时立即同步
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许 Action 向你的仓库推送提交
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master   # 你的仓库主分支名，如果是 main 请改成 main
+          persist-credentials: false
+
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.2
+        with:
+          target_sync_branch: master          # 你的目标分支
+          upstream_sync_branch: master        # 上游仓库的分支名
+          upstream_sync_repo: Devilstore/Glados-Railgun-checkin   # 上游仓库
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}          # 使用内置 Token
+
+      - name: Report status
+        run: |
+          if [ "${{ steps.sync.outputs.has_new_commits }}" == "true" ]; then
+            echo "✅ 发现上游新提交，已同步。"
+          else
+            echo "ℹ️ 上游无新提交，无需同步。"
+          fi
