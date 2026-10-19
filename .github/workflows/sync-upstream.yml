@@ -4,7 +4,7 @@ on:
   schedule:
     # 每周日 00:00 UTC 执行（对应北京时间每周日 08:00）
     - cron: '0 0 * * 0'
-  workflow_dispatch:   # 支持手动触发，方便需要时立即同步
+  workflow_dispatch:   # 支持手动触发
 
 jobs:
   sync:
@@ -12,22 +12,24 @@ jobs:
     permissions:
       contents: write  # 允许 Action 向你的仓库推送提交
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # 强制使用 Node 24
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: master   # 你的仓库主分支名，如果是 main 请改成 main
-          persist-credentials: false
+          ref: master   # 确保这是你的主分支名（main 或 master）
+          token: ${{ secrets.GITHUB_TOKEN }} # 显式传入 token
+          persist-credentials: true          # 🔴 关键修改：改为 true，保留凭据
+          fetch-depth: 0                     # 建议加上，拉取完整历史以便同步
 
       - name: Sync upstream changes
         id: sync
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.2
         with:
-          target_sync_branch: master          # 你的目标分支
-          upstream_sync_branch: master        # 上游仓库的分支名
-          upstream_sync_repo: Devilstore/Glados-Railgun-checkin   # 上游仓库
-          target_repo_token: ${{ secrets.GITHUB_TOKEN }}          # 使用内置 Token
+          target_sync_branch: master
+          upstream_sync_branch: master
+          upstream_sync_repo: Devilstore/Glados-Railgun-checkin
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Report status
         run: |
